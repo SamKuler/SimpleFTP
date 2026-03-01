@@ -564,20 +564,30 @@ static int format_list_line(const fs_file_info_t *info,
     char group_name[32] = "ftp";
 
 #ifndef _WIN32
-    struct passwd *pw = getpwuid(info->uid);
-    if (pw)
-        snprintf(user_name, sizeof(user_name), "%s", pw->pw_name);
+    struct passwd pw_buf;
+    char pw_strbuf[1024];
+    struct passwd *pw_result = NULL;
+    if (getpwuid_r(info->uid, &pw_buf, pw_strbuf, sizeof(pw_strbuf), &pw_result) == 0 && pw_result)
+        snprintf(user_name, sizeof(user_name), "%s", pw_result->pw_name);
     else
         snprintf(user_name, sizeof(user_name), "%u", info->uid);
 
-    struct group *gr = getgrgid(info->gid);
-    if (gr)
-        snprintf(group_name, sizeof(group_name), "%s", gr->gr_name);
+    struct group gr_buf;
+    char gr_strbuf[1024];
+    struct group *gr_result = NULL;
+    if (getgrgid_r(info->gid, &gr_buf, gr_strbuf, sizeof(gr_strbuf), &gr_result) == 0 && gr_result)
+        snprintf(group_name, sizeof(group_name), "%s", gr_result->gr_name);
     else
         snprintf(group_name, sizeof(group_name), "%u", info->gid);
 #endif
 
-    struct tm *tm_info = localtime(&info->last_modified);
+    struct tm tm_buf;
+#ifdef _WIN32
+    localtime_s(&tm_buf, &info->last_modified);
+#else
+    localtime_r(&info->last_modified, &tm_buf);
+#endif
+    struct tm *tm_info = &tm_buf;
     if (!tm_info)
     {
         return -1;

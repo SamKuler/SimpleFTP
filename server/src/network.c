@@ -638,7 +638,7 @@ int net_get_last_error(void)
 
 const char *net_get_error_string(int error_code)
 {
-    static char buffer[256];
+    static __thread char buffer[256];
 
 #ifdef _WIN32
     FormatMessageA(

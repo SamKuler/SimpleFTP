@@ -1211,7 +1211,8 @@ static int normalize_and_validate_path(const char *base, const char *path,
     char *components[256];
     int component_count = 0;
 
-    char *token = strtok(temp, "/");
+    char *saveptr = NULL;
+    char *token = strtok_r(temp, "/", &saveptr);
     while (token != NULL && component_count < 256)
     {
         if (strcmp(token, ".") == 0)
@@ -1230,7 +1231,7 @@ static int normalize_and_validate_path(const char *base, const char *path,
         {
             components[component_count++] = token;
         }
-        token = strtok(NULL, "/");
+        token = strtok_r(NULL, "/", &saveptr);
     }
 
     // Build the normalized path

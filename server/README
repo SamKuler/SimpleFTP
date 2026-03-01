@@ -1,8 +1,4 @@
-## 🚀 FTP Server
-
-`CMakeLists.txt` is used for development and test,
-`Makefile` is used for handin and autograde.
-
+# FTP Server
 ## 🧪 Testing
 
 ### Quick Start

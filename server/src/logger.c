@@ -160,6 +160,8 @@ void logger_set_level(log_level_t level)
 {
     if (level >= LOG_LEVEL_DEBUG && level <= LOG_LEVEL_ERROR)
     {
+        pthread_mutex_lock(&g_logger.lock);
         g_logger.level = level;
+        pthread_mutex_unlock(&g_logger.lock);
     }
 }

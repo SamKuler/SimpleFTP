@@ -18,6 +18,14 @@ set_tests_properties(FilesysTest PROPERTIES
                      LABELS "unit;c"
                      TIMEOUT 30)
 
+# UtilsTest (includes thread safety validation)
+add_executable(test_utils test_utils.c)
+target_link_libraries(test_utils ftpserver)
+add_test(NAME UtilsTest COMMAND test_utils)
+set_tests_properties(UtilsTest PROPERTIES
+                     LABELS "unit;c"
+                     TIMEOUT 30)
+
 # ============================================================================
 # Python Integration Tests
 # ============================================================================
@@ -74,7 +82,7 @@ set_tests_properties(FTPComprehensiveTest PROPERTIES
 # ============================================================================
 
 # Quick tests - for rapid development feedback
-set_tests_properties(LoggerTest FilesysTest FTPBasicTest PROPERTIES
+set_tests_properties(LoggerTest FilesysTest UtilsTest FTPBasicTest PROPERTIES
                      LABELS "quick")
 
 # Full test suite

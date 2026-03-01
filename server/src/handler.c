@@ -1890,7 +1890,13 @@ int cmd_handle_mdtm(cmd_handler_context_t context, const proto_command_t *cmd)
     }
 
     // Format time as YYYYMMDDHHMMSS
-    struct tm *tm_info = gmtime(&mtime);
+    struct tm tm_buf;
+#ifdef _WIN32
+    gmtime_s(&tm_buf, &mtime);
+#else
+    gmtime_r(&mtime, &tm_buf);
+#endif
+    struct tm *tm_info = &tm_buf;
     if (!tm_info)
     {
         return session_send_response(session, PROTO_RESP_FILE_UNAVAILABLE,

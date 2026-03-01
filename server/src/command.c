@@ -204,7 +204,7 @@ int cmd_get_handler_count(void)
 
 const char *cmd_get_all_registered_commands(void)
 {
-    static char command_list[CMD_MAX_HANDLERS * (PROTO_MAX_CMD_NAME + 4)]; // +4 for comma, space, and line breaks
+    static __thread char command_list[CMD_MAX_HANDLERS * (PROTO_MAX_CMD_NAME + 4)]; // +4 for comma, space, and line breaks
     command_list[0] = '\0';
 
     if (!g_initialized)
