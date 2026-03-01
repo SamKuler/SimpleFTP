@@ -1793,15 +1793,9 @@ int cmd_handle_size(cmd_handler_context_t context, const proto_command_t *cmd)
                                      "Cannot get size of a directory");
     }
 
-    // Check if file is locked and acquire shared lock
-    if (file_lock_is_exclusive_locked(abs_path))
-    {
-        return session_send_response(session, PROTO_RESP_FILE_ACTION_ABORTED,
-                                     "File is busy, try again later");
-    }
-
     // Acquire shared lock to ensure file is not being modified
-    if (file_lock_acquire_shared(abs_path) != 0)
+    // Use try_acquire to avoid blocking — fails immediately if exclusive lock held
+    if (file_lock_try_acquire_shared(abs_path) != 0)
     {
         return session_send_response(session, PROTO_RESP_FILE_ACTION_ABORTED,
                                      "File is busy, try again later");
@@ -1866,15 +1860,9 @@ int cmd_handle_mdtm(cmd_handler_context_t context, const proto_command_t *cmd)
                                      "Cannot get modification time of a directory");
     }
 
-    // Check if file is locked and acquire shared lock
-    if (file_lock_is_exclusive_locked(abs_path))
-    {
-        return session_send_response(session, PROTO_RESP_FILE_ACTION_ABORTED,
-                                     "File is busy, try again later");
-    }
-
     // Acquire shared lock to ensure file is not being modified
-    if (file_lock_acquire_shared(abs_path) != 0)
+    // Use try_acquire to avoid blocking — fails immediately if exclusive lock held
+    if (file_lock_try_acquire_shared(abs_path) != 0)
     {
         return session_send_response(session, PROTO_RESP_FILE_ACTION_ABORTED,
                                      "File is busy, try again later");

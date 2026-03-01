@@ -363,10 +363,7 @@ int proto_validate_path(const char *path)
     size_t len = strlen(path);
     for (size_t i = 0; i < len; i++)
     {
-        // Check for null bytes
-        if (path[i] == '\0' && i < len - 1)
-            return 0;
-        // Check for control characters
+        // Check for control characters (null bytes cannot appear since len = strlen)
         if (path[i] < 32 && path[i] != '\t') // Allow tab
             return 0;
     }

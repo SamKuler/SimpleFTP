@@ -629,17 +629,26 @@ static transfer_status_t send_listing(session_t *session,
                                       const char *dirpath,
                                       const char *filter_name)
 {
-    fs_file_info_t file_list[1024];
-    int count = fs_list_directory(dirpath, file_list, 1024);
+    // Heap-allocate to avoid ~600KB stack usage (fs_file_info_t is large)
+    #define MAX_DIR_ENTRIES 1024
+    fs_file_info_t *file_list = malloc(sizeof(fs_file_info_t) * MAX_DIR_ENTRIES);
+    if (!file_list)
+    {
+        LOG_ERROR("Failed to allocate memory for directory listing");
+        return TRANSFER_STATUS_INTERNAL_ERROR;
+    }
+    int count = fs_list_directory(dirpath, file_list, MAX_DIR_ENTRIES);
 
     if (count < 0)
     {
         LOG_ERROR("Failed to list directory: %s", dirpath);
+        free(file_list);
         return TRANSFER_STATUS_IO_ERROR;
     }
 
     int entries_sent = 0;
     char line_buffer[1024];
+    transfer_status_t status = TRANSFER_STATUS_OK;
 
     for (int i = 0; i < count; i++)
     {
@@ -647,7 +656,8 @@ static transfer_status_t send_listing(session_t *session,
         if (session_should_abort_transfer(session))
         {
             LOG_INFO("Directory listing aborted: %s", dirpath);
-            return TRANSFER_STATUS_ABORTED;
+            status = TRANSFER_STATUS_ABORTED;
+            goto cleanup;
         }
 
         // If filtering by name, skip non-matching entries
@@ -659,7 +669,8 @@ static transfer_status_t send_listing(session_t *session,
         if (format_list_line(&file_list[i], line_buffer, sizeof(line_buffer)) != 0)
         {
             LOG_ERROR("Failed to format listing line for %s", file_list[i].name);
-            return TRANSFER_STATUS_INTERNAL_ERROR;
+            status = TRANSFER_STATUS_INTERNAL_ERROR;
+            goto cleanup;
         }
 
         if (net_send_all(session->data_socket, line_buffer, strlen(line_buffer)) != 0)
@@ -667,14 +678,15 @@ static transfer_status_t send_listing(session_t *session,
             if (session_should_abort_transfer(session))
             {
                 LOG_INFO("Directory listing aborted by ABOR command (connection closed): %s", dirpath);
-                return TRANSFER_STATUS_ABORTED;
+                status = TRANSFER_STATUS_ABORTED;
             }
             else
             {
                 int err = net_get_last_error();
                 LOG_ERROR("Failed to send listing line: %s (code=%d)", net_get_error_string(err), err);
-                return TRANSFER_STATUS_CONN_ERROR;
+                status = TRANSFER_STATUS_CONN_ERROR;
             }
+            goto cleanup;
         }
 
         entries_sent++;
@@ -689,11 +701,15 @@ static transfer_status_t send_listing(session_t *session,
     if (filter_name && entries_sent == 0)
     {
         LOG_DEBUG("Entry '%s' not found in %s", filter_name, dirpath);
-        return TRANSFER_STATUS_IO_ERROR;
+        status = TRANSFER_STATUS_IO_ERROR;
+        goto cleanup;
     }
 
     LOG_INFO("Sent directory listing: %d entries", entries_sent);
-    return TRANSFER_STATUS_OK;
+
+cleanup:
+    free(file_list);
+    return status;
 }
 
 transfer_status_t transfer_send_list(session_t *session, const char *path)

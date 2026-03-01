@@ -256,21 +256,11 @@ int auth_authenticate(const char *username, const char *password)
     if (g_anonymous_enabled && strcmp(username, "anonymous") == 0)
     {
         // Anonymous user can log in with any password
-        // Check if anonymous user exists in database (optional)
-        auth_user_t *user = find_user(username);
-        if (user)
-        {
-            pthread_mutex_unlock(&g_auth_lock);
-            LOG_INFO("Anonymous user authenticated using database configuration");
-            return 1;
-        }
-        else
-        {
-            // Use virtual anonymous user with default settings
-            pthread_mutex_unlock(&g_auth_lock);
-            LOG_INFO("Anonymous user authenticated using default virtual configuration");
-            return 1;
-        }
+        int has_db_entry = (find_user(username) != NULL);
+        pthread_mutex_unlock(&g_auth_lock);
+        LOG_INFO("Anonymous user authenticated using %s configuration",
+                 has_db_entry ? "database" : "default virtual");
+        return 1;
     }
 
     // Regular user authentication
