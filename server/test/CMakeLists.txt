@@ -68,6 +68,15 @@ set_tests_properties(FTPRestTest PROPERTIES
                      TIMEOUT 60
                      LABELS "rest;resume;python;integration")
 
+# REIN (Reinitialize) Test
+add_test(NAME FTPReinTest
+         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_rein.py
+         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(FTPReinTest PROPERTIES
+                     ENVIRONMENT "PYTHONPATH=${CMAKE_SOURCE_DIR}"
+                     TIMEOUT 60
+                     LABELS "rein;python;integration")
+
 # Comprehensive Test
 add_test(NAME FTPComprehensiveTest
          COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_comprehensive.py
@@ -86,5 +95,5 @@ set_tests_properties(LoggerTest FilesysTest UtilsTest FTPBasicTest PROPERTIES
                      LABELS "quick")
 
 # Full test suite
-set_tests_properties(FTPRenameDeleteTest FTPAborTest FTPRestTest FTPComprehensiveTest PROPERTIES
+set_tests_properties(FTPRenameDeleteTest FTPAborTest FTPRestTest FTPReinTest FTPComprehensiveTest PROPERTIES
                      LABELS "full")

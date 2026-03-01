@@ -133,6 +133,22 @@ session_t *session_create(socket_t control_socket,
                           const char *root_dir,
                           const char *bind_address);
 
+
+/**
+ * @brief Resets session state to initial defaults.
+ *
+ * Resets authentication, directory, transfer parameters, data connection,
+ * command state, and transfer state. Does NOT reset connection info
+ * (control_socket, client_ip, client_port, bind_address, root_dir),
+ * timestamps, statistics, or the mutex.
+ *
+ * Used by both session_create() and REIN command handler.
+ *
+ * @param session Pointer to session to reset
+ */
+void session_reset_state(session_t *session);
+
+
 /**
  * @brief Destroys an FTP session and frees resources.
  *

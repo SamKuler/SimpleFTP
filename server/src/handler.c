@@ -324,41 +324,8 @@ int cmd_handle_rein(cmd_handler_context_t context, const proto_command_t *cmd)
 
     pthread_mutex_lock(&session->lock);
 
-    // Reset authentication state
-    session->authenticated = 0;
-    session->state = SESSION_STATE_CONNECTED;
-    memset(session->username, 0, sizeof(session->username));
-    session->permissions = AUTH_PERM_NONE;
-
-    // Reset directory state
-    strcpy(session->current_dir, "/");
-    memset(session->user_home_dir, 0, sizeof(session->user_home_dir));
-
-    // Reset transfer parameters to defaults
-    session->transfer_type = PROTO_TYPE_ASCII;
-    session->transfer_mode = PROTO_MODE_STREAM;
-    session->data_structure = PROTO_STRU_FILE;
-
-    // Reset data connection mode
-    session->data_mode = SESSION_DATA_MODE_NONE;
-    memset(session->active_ip, 0, sizeof(session->active_ip));
-    session->active_port = 0;
-    session->passive_port = 0;
-
-    // Clear command state
-    session->restart_offset = 0;
-    session->rename_pending = 0;
-    memset(session->rename_from, 0, sizeof(session->rename_from));
-
-    // Clear transfer state
-    session->transfer_should_abort = 0;
-    session->transfer_in_progress = 0;
-    session->transfer_thread = 0;
-    session->transfer_thread_state = TRANSFER_THREAD_IDLE;
-    session->transfer_params = NULL;
-    session->transfer_result = TRANSFER_STATUS_OK;
-
-    // Do not reset statistics on REIN
+    // Reset all session state to defaults (statistics are preserved)
+    session_reset_state(session);
 
     pthread_mutex_unlock(&session->lock);
 

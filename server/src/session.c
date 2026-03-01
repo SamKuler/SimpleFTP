@@ -57,11 +57,6 @@ session_t *session_create(socket_t control_socket,
         strcpy(session->bind_address, "127.0.0.1"); // Default fallback
     }
 
-    // Set initial state
-    session->state = SESSION_STATE_CONNECTED;
-    session->authenticated = 0;
-    session->permissions = AUTH_PERM_NONE;
-
     // Set directory information
     strncpy(session->root_dir, root_dir, sizeof(session->root_dir) - 1);
     session->root_dir[sizeof(session->root_dir) - 1] = '\0';
@@ -72,33 +67,8 @@ session_t *session_create(socket_t control_socket,
         return NULL;
     }
 
-    strcpy(session->current_dir, "/");                                 // Start at root
-    memset(session->user_home_dir, 0, sizeof(session->user_home_dir)); // No home dir yet
-
-    // Set default transfer parameters
-    // Default type is ASCII
-    session->transfer_type = PROTO_TYPE_ASCII;
-    session->transfer_mode = PROTO_MODE_STREAM;
-    session->data_structure = PROTO_STRU_FILE;
-
-    // Initialize data connection state
-    session->data_mode = SESSION_DATA_MODE_NONE;
-    session->data_socket = INVALID_SOCKET_T;
-    session->data_listen_socket = INVALID_SOCKET_T;
-
-    // Initialize command state
-    session->restart_offset = 0;
-    session->rename_pending = 0;
-
-    // Initialize transfer state
-    session->transfer_should_abort = 0;
-    session->transfer_in_progress = 0;
-
-    // Initialize async transfer thread state
-    session->transfer_thread = 0;
-    session->transfer_thread_state = TRANSFER_THREAD_IDLE;
-    session->transfer_params = NULL;
-    session->transfer_result = TRANSFER_STATUS_OK;
+    // Reset all session state to defaults
+    session_reset_state(session);
 
     // Initialize timestamps
     session->connect_time = time(NULL);
@@ -118,6 +88,45 @@ session_t *session_create(socket_t control_socket,
     LOG_INFO("Session created for client %s:%u", client_ip, client_port);
 
     return session;
+}
+
+void session_reset_state(session_t *session)
+{
+    // Reset authentication state
+    session->state = SESSION_STATE_CONNECTED;
+    session->authenticated = 0;
+    memset(session->username, 0, sizeof(session->username));
+    session->permissions = AUTH_PERM_NONE;
+
+    // Reset directory state
+    strcpy(session->current_dir, "/");
+    memset(session->user_home_dir, 0, sizeof(session->user_home_dir));
+
+    // Reset transfer parameters to defaults
+    session->transfer_type = PROTO_TYPE_ASCII;
+    session->transfer_mode = PROTO_MODE_STREAM;
+    session->data_structure = PROTO_STRU_FILE;
+
+    // Reset data connection mode
+    session->data_mode = SESSION_DATA_MODE_NONE;
+    session->data_socket = INVALID_SOCKET_T;
+    session->data_listen_socket = INVALID_SOCKET_T;
+    memset(session->active_ip, 0, sizeof(session->active_ip));
+    session->active_port = 0;
+    session->passive_port = 0;
+
+    // Reset command state
+    session->restart_offset = 0;
+    session->rename_pending = 0;
+    memset(session->rename_from, 0, sizeof(session->rename_from));
+
+    // Reset transfer state
+    session->transfer_should_abort = 0;
+    session->transfer_in_progress = 0;
+    session->transfer_thread = 0;
+    session->transfer_thread_state = TRANSFER_THREAD_IDLE;
+    session->transfer_params = NULL;
+    session->transfer_result = TRANSFER_STATUS_OK;
 }
 
 void session_destroy(session_t *session)
