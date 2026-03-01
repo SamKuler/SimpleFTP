@@ -215,10 +215,10 @@ int server_init(const server_config_t *config)
         return -1;
     }
 
-    // Enable anonymous login by default and set default home directory
+    // Enable anonymous login by default with read-only access.
+    // Adjust or disable in production environments as needed.
     auth_set_anonymous_enabled(1);
-    // REQUIRED BY HOMEWORK, PRODUCTION ENVIRONMENT SHOULD RESTRICT PERMISSIONS
-    auth_set_anonymous_defaults("/", AUTH_PERM_ALL);
+    auth_set_anonymous_defaults("/", AUTH_PERM_READ);
 
     // Try to load user database (optional, will warn if file doesn't exist)
     auth_load_users("users.db");

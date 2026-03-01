@@ -76,7 +76,8 @@ session_t *session_create(socket_t control_socket,
     memset(session->user_home_dir, 0, sizeof(session->user_home_dir)); // No home dir yet
 
     // Set default transfer parameters
-    session->transfer_type = PROTO_TYPE_BINARY; // Change as HOMEWORK REQUIRES
+    // Default type is ASCII
+    session->transfer_type = PROTO_TYPE_ASCII;
     session->transfer_mode = PROTO_MODE_STREAM;
     session->data_structure = PROTO_STRU_FILE;
 

@@ -15,8 +15,8 @@
 #include <signal.h>
 
 // Default configuration
-#define DEFAULT_PORT 21                  // Change as HOMEWORK REQUIREMENT
-#define DEFAULT_ROOT_DIR "/tmp"          // Change as HOMEWORK REQUIREMENT ON UNIX systems
+#define DEFAULT_PORT 2121
+#define DEFAULT_ROOT_DIR "/tmp"
 #define DEFAULT_BIND_ADDRESS "127.0.0.1" // Bind to localhost only for security
 #define DEFAULT_MAX_BACKLOG 10
 #define DEFAULT_COMMAND_TIMEOUT_MS 300000    // 5 minutes

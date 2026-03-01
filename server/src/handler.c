@@ -325,7 +325,7 @@ int cmd_handle_rein(cmd_handler_context_t context, const proto_command_t *cmd)
     memset(session->user_home_dir, 0, sizeof(session->user_home_dir));
 
     // Reset transfer parameters to defaults
-    session->transfer_type = PROTO_TYPE_BINARY;
+    session->transfer_type = PROTO_TYPE_ASCII;
     session->transfer_mode = PROTO_MODE_STREAM;
     session->data_structure = PROTO_STRU_FILE;
 

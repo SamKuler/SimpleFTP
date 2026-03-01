@@ -418,31 +418,39 @@ class TransferManager:
             # Get data to send
             if transfer.data:
                 data_to_send = transfer.data[transfer.offset:]
+
+                # Send in-memory data in chunks
+                buffer_size = 8192
+                offset = 0
+                while offset < len(data_to_send) and not transfer.cancel_event.is_set():
+                    transfer.pause_event.wait()
+                    chunk = data_to_send[offset:offset + buffer_size]
+                    self.client.data_conn.send_data(chunk)
+                    offset += len(chunk)
+                    transfer.bytes_transferred = transfer.offset + offset
+                    if transfer.progress_callback:
+                        transfer.progress_callback(transfer.bytes_transferred, transfer.total_size)
+
             elif transfer.local_path:
+                # Stream file from disk in chunks to avoid loading the whole
+                # file into memory (prevents OOM on large files).
+                buffer_size = 8192
+                bytes_sent = 0
                 with open(transfer.local_path, 'rb') as f:
                     if transfer.offset > 0:
                         f.seek(transfer.offset)
-                    data_to_send = f.read()
+                    while not transfer.cancel_event.is_set():
+                        transfer.pause_event.wait()
+                        chunk = f.read(buffer_size)
+                        if not chunk:
+                            break
+                        self.client.data_conn.send_data(chunk)
+                        bytes_sent += len(chunk)
+                        transfer.bytes_transferred = transfer.offset + bytes_sent
+                        if transfer.progress_callback:
+                            transfer.progress_callback(transfer.bytes_transferred, transfer.total_size)
             else:
                 raise ValueError("No data or file specified for upload")
-
-            # Send data in chunks
-            buffer_size = 8192
-            offset = 0
-
-            while offset < len(data_to_send) and not transfer.cancel_event.is_set():
-                # Wait if paused
-                transfer.pause_event.wait()
-
-                chunk = data_to_send[offset:offset + buffer_size]
-                self.client.data_conn.send_data(chunk)
-
-                offset += len(chunk)
-                transfer.bytes_transferred = transfer.offset + offset
-
-                # Report progress
-                if transfer.progress_callback:
-                    transfer.progress_callback(transfer.bytes_transferred, transfer.total_size)
 
             # Close data connection
             self.client.data_conn.close()

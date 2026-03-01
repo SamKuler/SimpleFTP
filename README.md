@@ -67,7 +67,7 @@ make
 | `-b <addr>` | 绑定地址 | `127.0.0.1` |
 | `-c <n>` | 最大并发连接数（`-1` 不限） | `100` |
 | `-l <level>` | 日志级别（DEBUG/INFO/WARN/ERROR） | `INFO` |
-| `-a <family>` | 地址族（ipv4/ipv6/unspec） | `ipv4` |
+| `-a <family>` | 地址族（ipv4/ipv6/unspec） | `unspec` |
 
 示例：
 
@@ -119,13 +119,22 @@ bash build_executable.sh
 
 ## 测试
 
-服务端测试需先启动服务端，再在 `server/build` 目录下运行：
+**C 单元测试**（`LoggerTest`、`FilesysTest`）不依赖运行中的服务端，可直接执行。
+
+**Python 集成测试**需要预先在 `127.0.0.1:2121` 启动服务端，并开启匿名登录（默认已开启）。测试文件根目录需可读且存在（默认 `/tmp` 即可）：
 
 ```bash
+# Step 1：在终端后台启动服务端（端口 2121，绑定本地回环）
+cd server/build
+./server -p 2121 -r /tmp -b 127.0.0.1 &
+
+# Step 2：在 server/build 目录下运行测试
 ctest -V                     # 运行全部测试
 ctest -R FTPBasicTest -V     # 基本连通性测试
 ctest -L integration -V      # 集成测试
 ```
+
+> **注意：** 默认绑定地址为 `127.0.0.1`（仅本机回环），若需允许远程客户端连接，启动时需指定 `-b 0.0.0.0` 或具体网卡地址。
 
 测试包含 C 单元测试（文件系统、日志模块）与 Python 集成测试（基本命令、ABOR、REST、重命名/删除等）。
 

@@ -97,10 +97,11 @@ def run_interactive_mode(args):
     host = args.ip or args.host
     if host:
         cli.cmd_connect([host, str(args.port)])
-        # Disable auto login if not in verbose mode
-        if cli.connected and args.user and args.password and args.verbose:
+        # Auto-login if credentials are provided (explicit or default anonymous).
+        # The verbose flag only controls extra output, not whether login happens.
+        if cli.connected and args.user:
             cli.cmd_login([args.user, args.password])
-    
+
     # Enter interactive loop
     cli.run_interactive()
 
