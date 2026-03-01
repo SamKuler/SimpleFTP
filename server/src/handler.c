@@ -17,6 +17,30 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Macro to check authentication. Returns 530 if not authenticated.
+ */
+#define REQUIRE_AUTH(session)                                           \
+    do {                                                               \
+        if (!(session)->authenticated)                                 \
+            return session_send_response((session),                    \
+                PROTO_RESP_NOT_LOGGED_IN,                              \
+                "Please login with USER and PASS");                    \
+    } while (0)
+
+/**
+ * @brief Macro to check both authentication and argument presence.
+ *        Returns 530 if not authenticated, 501 if no argument.
+ */
+#define REQUIRE_AUTH_AND_ARG(session, cmd)                              \
+    do {                                                               \
+        REQUIRE_AUTH(session);                                         \
+        if (!(cmd)->has_argument)                                      \
+            return session_send_response((session),                    \
+                PROTO_RESP_SYNTAX_ERROR_PARAM,                         \
+                "Syntax error in parameters");                         \
+    } while (0)
+
 // Previous Handlers for context changing
 
 int cmd_prev_handle_clear_restart(cmd_handler_context_t context, const proto_command_t *cmd)
@@ -162,17 +186,7 @@ int cmd_handle_cwd(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     if (session_change_directory(session, cmd->argument) != 0)
     {
@@ -188,11 +202,7 @@ int cmd_handle_cdup(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
+    REQUIRE_AUTH(session);
 
     if (cmd->has_argument)
     {
@@ -362,17 +372,7 @@ int cmd_handle_port(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     proto_port_params_t port_params;
     if (proto_parse_port(cmd->argument, &port_params) != 0)
@@ -407,11 +407,7 @@ int cmd_handle_pasv(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
+    REQUIRE_AUTH(session);
 
     if (cmd->has_argument)
     {
@@ -472,17 +468,7 @@ int cmd_handle_type(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     proto_transfer_type_t type;
     if (proto_parse_type(cmd->argument, &type) != 0)
@@ -513,17 +499,7 @@ int cmd_handle_stru(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     proto_data_structure_t structure;
     if (proto_parse_stru(cmd->argument, &structure) != 0)
@@ -558,17 +534,7 @@ int cmd_handle_mode(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     proto_transfer_mode_t mode;
     if (proto_parse_mode(cmd->argument, &mode) != 0)
@@ -595,17 +561,7 @@ int cmd_handle_retr(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check if data transfer mode is set (PASV or PORT must be called first)
     if (session->data_mode == SESSION_DATA_MODE_NONE)
@@ -751,17 +707,7 @@ int cmd_handle_stor(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check if data transfer mode is set (PASV or PORT must be called first)
     if (session->data_mode == SESSION_DATA_MODE_NONE)
@@ -913,17 +859,7 @@ int cmd_handle_appe(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check if data transfer mode is set (PASV or PORT must be called first)
     if (session->data_mode == SESSION_DATA_MODE_NONE)
@@ -1045,17 +981,7 @@ int cmd_handle_rest(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Parse the restart offset
     char *endptr;
@@ -1084,11 +1010,7 @@ int cmd_handle_list(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
+    REQUIRE_AUTH(session);
 
     // Check if data transfer mode is set (PASV or PORT must be called first)
     if (session->data_mode == SESSION_DATA_MODE_NONE)
@@ -1180,11 +1102,7 @@ int cmd_handle_nlst(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
+    REQUIRE_AUTH(session);
 
     // Check if data transfer mode is set (PASV or PORT must be called first)
     if (session->data_mode == SESSION_DATA_MODE_NONE)
@@ -1276,11 +1194,7 @@ int cmd_handle_pwd(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
+    REQUIRE_AUTH(session);
 
     if (cmd->has_argument)
     {
@@ -1305,17 +1219,7 @@ int cmd_handle_mkd(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check path access permission (MKDIR required for creating directories)
     if (!session_check_path_access(session, cmd->argument, AUTH_PERM_MKDIR))
@@ -1356,17 +1260,7 @@ int cmd_handle_rmd(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check path access permission (RMDIR required for removing directories)
     if (!session_check_path_access(session, cmd->argument, AUTH_PERM_RMDIR))
@@ -1411,17 +1305,7 @@ int cmd_handle_rnfr(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check rename permission on source
     if (!session_check_path_access(session, cmd->argument, AUTH_PERM_RENAME))
@@ -1469,17 +1353,7 @@ int cmd_handle_rnto(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Get the source path from RNFR
     char from_path[SESSION_MAX_PATH];
@@ -1591,17 +1465,7 @@ int cmd_handle_dele(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check delete permission
     if (!session_check_path_access(session, cmd->argument, AUTH_PERM_DELETE))
@@ -1753,17 +1617,7 @@ int cmd_handle_size(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check path access permission (READ required for getting file size)
     if (!session_check_path_access(session, cmd->argument, AUTH_PERM_READ))
@@ -1820,17 +1674,7 @@ int cmd_handle_mdtm(cmd_handler_context_t context, const proto_command_t *cmd)
 {
     session_t *session = (session_t *)context;
 
-    if (!session->authenticated)
-    {
-        return session_send_response(session, PROTO_RESP_NOT_LOGGED_IN,
-                                     "Please login with USER and PASS");
-    }
-
-    if (!cmd->has_argument)
-    {
-        return session_send_response(session, PROTO_RESP_SYNTAX_ERROR_PARAM,
-                                     "Syntax error in parameters");
-    }
+    REQUIRE_AUTH_AND_ARG(session, cmd);
 
     // Check path access permission (READ required for getting file modification time)
     if (!session_check_path_access(session, cmd->argument, AUTH_PERM_READ))

@@ -56,6 +56,29 @@ void cmd_cleanup(void)
     g_initialized = 0;
 }
 
+/**
+ * @brief Convert command to uppercase and find its handler index.
+ * @param command The command name to search for.
+ * @return Index in g_handlers, or -1 if not found.
+ */
+static int find_handler_index(const char *command)
+{
+    if (!command)
+        return -1;
+
+    char cmd_upper[PROTO_MAX_CMD_NAME];
+    strncpy(cmd_upper, command, PROTO_MAX_CMD_NAME - 1);
+    cmd_upper[PROTO_MAX_CMD_NAME - 1] = '\0';
+    to_uppercase(cmd_upper);
+
+    for (int i = 0; i < CMD_MAX_HANDLERS; i++)
+    {
+        if (g_handlers[i].in_use && strcmp(g_handlers[i].command, cmd_upper) == 0)
+            return i;
+    }
+    return -1;
+}
+
 int cmd_register_handler(const char *command, cmd_handler_t handler, cmd_handler_t prev_handler)
 {
     if (!g_initialized)
@@ -64,23 +87,21 @@ int cmd_register_handler(const char *command, cmd_handler_t handler, cmd_handler
     if (!command || !handler)
         return -1;
 
-    // Convert command to uppercase for comparison
+    // Check if command is already registered
+    int idx = find_handler_index(command);
+    if (idx >= 0)
+    {
+        // Update existing handler
+        g_handlers[idx].handler = handler;
+        g_handlers[idx].prev_handler = prev_handler;
+        return 0;
+    }
+
+    // Convert command to uppercase for storage
     char cmd_upper[PROTO_MAX_CMD_NAME];
     strncpy(cmd_upper, command, PROTO_MAX_CMD_NAME - 1);
     cmd_upper[PROTO_MAX_CMD_NAME - 1] = '\0';
     to_uppercase(cmd_upper);
-
-    // Check if command is already registered
-    for (int i = 0; i < CMD_MAX_HANDLERS; i++)
-    {
-        if (g_handlers[i].in_use && strcmp(g_handlers[i].command, cmd_upper) == 0)
-        {
-            // Update existing handler
-            g_handlers[i].handler = handler;
-            g_handlers[i].prev_handler = prev_handler;
-            return 0;
-        }
-    }
 
     // Find empty slot
     for (int i = 0; i < CMD_MAX_HANDLERS; i++)
@@ -105,29 +126,15 @@ int cmd_unregister_handler(const char *command)
     if (!g_initialized)
         return -1;
 
-    if (!command)
+    int idx = find_handler_index(command);
+    if (idx < 0)
         return -1;
 
-    // Convert command to uppercase for comparison
-    char cmd_upper[PROTO_MAX_CMD_NAME];
-    strncpy(cmd_upper, command, PROTO_MAX_CMD_NAME - 1);
-    cmd_upper[PROTO_MAX_CMD_NAME - 1] = '\0';
-    to_uppercase(cmd_upper);
-
-    // Find and remove handler
-    for (int i = 0; i < CMD_MAX_HANDLERS; i++)
-    {
-        if (g_handlers[i].in_use && strcmp(g_handlers[i].command, cmd_upper) == 0)
-        {
-            g_handlers[i].in_use = 0;
-            g_handlers[i].handler = NULL;
-            g_handlers[i].prev_handler = NULL;
-            memset(g_handlers[i].command, 0, PROTO_MAX_CMD_NAME);
-            return 0;
-        }
-    }
-
-    return -1;
+    g_handlers[idx].in_use = 0;
+    g_handlers[idx].handler = NULL;
+    g_handlers[idx].prev_handler = NULL;
+    memset(g_handlers[idx].command, 0, PROTO_MAX_CMD_NAME);
+    return 0;
 }
 
 int cmd_dispatch(cmd_handler_context_t context, const proto_command_t *cmd)
@@ -166,22 +173,11 @@ int cmd_is_registered(const char *command)
     if (!g_initialized)
         return 0;
 
-    if (!command)
-        return 0;
-
-    // Convert command to uppercase for comparison
-    char cmd_upper[PROTO_MAX_CMD_NAME];
-    strncpy(cmd_upper, command, PROTO_MAX_CMD_NAME - 1);
-    cmd_upper[PROTO_MAX_CMD_NAME - 1] = '\0';
-    to_uppercase(cmd_upper);
-
-    LOG_DEBUG("Checking registration for command: %s", cmd_upper);
-
-    // Check if handler exists
-    for (int i = 0; i < CMD_MAX_HANDLERS; i++)
+    int idx = find_handler_index(command);
+    if (idx >= 0)
     {
-        if (g_handlers[i].in_use && strcmp(g_handlers[i].command, cmd_upper) == 0)
-            return 1;
+        LOG_DEBUG("Command '%s' is registered", command);
+        return 1;
     }
 
     return 0;
